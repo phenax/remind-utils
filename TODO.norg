@@ -1,7 +1,17 @@
 * Tasks
   - (x) Parse date/time
   - (x) format to remind
-  - ( ) Parse rule
+  - (-) Parse rule weekly
+  -- (x) byday
+  -- ( ) interval
+  -- ( ) count
+  -- ( ) bymonth
+  -- ( ) wkst (week start)
+  -- ( ) until
+  - ( ) Parse rule until
+  - ( ) Parse rule daily
+  - ( ) Parse rule monthly
   - ( ) Handle other formats
   - ( ) Handle timezones
   - ( ) Escape newlines from summary
+  - ( ) Parse out urls from description
