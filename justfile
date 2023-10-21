@@ -1,2 +1,2 @@
 run *args:
-  cabal run {{args}}
+  cargo watch -x run {{args}}
