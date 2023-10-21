@@ -1,22 +1,20 @@
+#![feature(iter_intersperse)]
+
 use anyhow::*;
 use chrono::naive::{NaiveDate, NaiveDateTime};
 use chrono::Duration;
 use ical::parser::ical::component::IcalCalendar;
 use ical::property::Property;
-use std::fs::File;
-use std::io::BufReader;
+use std::collections::HashMap;
 
-fn get_property(properties: &[Property], name: &str) -> String {
-  properties
-    .iter()
-    .find_map(|p| {
-      if p.name == name.to_uppercase() {
-        p.value.to_owned()
-      } else {
-        None
-      }
-    })
-    .unwrap_or_else(|| "".to_string())
+fn get_property(properties: &[Property], name: &str) -> Option<String> {
+  properties.iter().find_map(|p| {
+    if p.name == name.to_uppercase() {
+      p.value.to_owned()
+    } else {
+      None
+    }
+  })
 }
 
 fn get_date_property(properties: &[Property], name: &str) -> Result<NaiveDateTime> {
@@ -40,14 +38,53 @@ fn get_date_property(properties: &[Property], name: &str) -> Result<NaiveDateTim
     .ok_or(Error::msg("Helele"))?
 }
 
+fn to_day(d: &str) -> &str {
+  match d {
+    "MO" => "Mon",
+    "TU" => "Tue",
+    "WE" => "Wed",
+    "TH" => "Thu",
+    "FR" => "Fri",
+    "SA" => "Sat",
+    "SU" => "Sun",
+    _ => "",
+  }
+}
+
+pub fn parse_rule(rule: Option<String>) -> Option<String> {
+  if let Some(rule) = rule {
+    let rules = rule
+      .split(';')
+      .filter_map(|v| v.split_once('=').map(|(k, v)| (k, v.to_string())))
+      .collect::<HashMap<&str, String>>();
+
+    match rules.get("FREQ").map(|v| v.as_str()) {
+      Some("WEEKLY") => Some(
+        rules
+          .get("BYDAY")
+          .map(|v| v.to_string())
+          .unwrap_or_default()
+          .split(',')
+          .map(to_day)
+          .intersperse(" ")
+          .collect::<String>(),
+      ),
+      Some("DAILY") => None,
+      _ => None,
+    }
+  } else {
+    None
+  }
+}
+
 pub fn ical2rem(cal: IcalCalendar) -> Vec<Result<String>> {
   cal
     .events
     .iter()
     .map(|event| {
-      let summary = get_property(&event.properties, "SUMMARY");
-      let meet_link = get_property(&event.properties, "X-GOOGLE-CONFERENCE");
-      // let rules = get_property(&event.properties, "rrule");
+      let summary = get_property(&event.properties, "SUMMARY").unwrap_or_default();
+      let meet_link = get_property(&event.properties, "X-GOOGLE-CONFERENCE").unwrap_or_default();
+      let reccurance_rules = get_property(&event.properties, "RRULE");
 
       let dt_start = get_date_property(&event.properties, "DTSTART")?;
       let dt_end = get_date_property(&event.properties, "DTEND")?;
@@ -55,10 +92,15 @@ pub fn ical2rem(cal: IcalCalendar) -> Vec<Result<String>> {
       let delta = if dt_end - dt_start >= Duration::days(1) {
         format!("UNTIL {}", dt_end.format("%d %b %Y"))
       } else {
-        format!("DURATION {}:00", (dt_end - dt_start).num_minutes())
+        format!("DURATION {}", (dt_end - dt_start).num_minutes())
       };
 
-      let date = dt_start.format("%d %b %Y AT %H:%M");
+      let rules = parse_rule(reccurance_rules);
+      let date = if let Some(rule) = rules {
+        format!("{rule} FROM {}", dt_start.format("%d %b %Y AT %H:%M"))
+      } else {
+        dt_start.format("%d %b %Y AT %H:%M").to_string()
+      };
 
       Ok(
         format!("REM {date} {delta} MSG {summary} {meet_link}")
