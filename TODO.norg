@@ -1,4 +1,7 @@
 * Tasks
   - (x) Parse date/time
-  - ( ) format to remind
+  - (x) format to remind
   - ( ) Parse rule
+  - ( ) Handle other formats
+  - ( ) Handle timezones
+  - ( ) Escape newlines from summary
