@@ -1,2 +1,2 @@
-run:
-  cabal run
+run *args:
+  cabal run {{args}}

@@ -1,2 +1,9 @@
-dist-newstyle/
-*.log
+.direnv/
+target/
+build/
+node_modules/
+
+
+# Added by cargo
+
+/target
