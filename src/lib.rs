@@ -2,13 +2,32 @@
 
 mod properties;
 
+use std::collections::HashMap;
+
 use anyhow::*;
 use chrono::Duration;
-use ical::parser::ical::component::IcalCalendar;
+use ical::parser::ical::component::{IcalCalendar, IcalTimeZoneTransitionType};
 
 use properties::*;
 
 pub fn ical2rem(cal: IcalCalendar) -> Vec<Result<String>> {
+  let timezone_map = cal
+    .timezones
+    .iter()
+    .filter_map(|tz| {
+      let tzid = get_property_value(&tz.properties, "TZID");
+      let offset = tz.transitions.iter().find_map(|t| {
+        if let IcalTimeZoneTransitionType::STANDARD = t.transition {
+          get_property_value(&t.properties, "TZOFFSETFROM")
+        } else {
+          None
+        }
+      });
+
+      tzid.zip(offset)
+    })
+    .collect::<HashMap<String, String>>();
+
   cal
     .events
     .iter()
@@ -17,8 +36,8 @@ pub fn ical2rem(cal: IcalCalendar) -> Vec<Result<String>> {
       let meet_link =
         get_property_value(&event.properties, "X-GOOGLE-CONFERENCE").unwrap_or_default();
 
-      let dt_start = get_property_datetime(&event.properties, "DTSTART")?;
-      let dt_end = get_property_datetime(&event.properties, "DTEND")?;
+      let dt_start = get_property_datetime(&event.properties, &timezone_map, "DTSTART")?;
+      let dt_end = get_property_datetime(&event.properties, &timezone_map, "DTEND")?;
 
       let rules = get_property_recurrance(&event.properties);
 

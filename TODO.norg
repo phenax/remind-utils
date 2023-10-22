@@ -1,6 +1,7 @@
 * Tasks
   - (x) Parse date/time
   - (x) format to remind
+  - (x) Timezone parameter for all datetime
   - (-) Parse rule weekly
   -- (x) byday
   -- ( ) interval
@@ -8,10 +9,9 @@
   -- ( ) bymonth
   -- ( ) wkst (week start)
   -- ( ) until
-  - ( ) Parse rule until
+  - ( ) Use system timezone? (or X-WR-TIMEZONE?)
   - ( ) Parse rule daily
   - ( ) Parse rule monthly
-  - ( ) Handle other formats
-  - ( ) Handle timezones
+  - ( ) Figure out dt timestamp meaning
   - ( ) Escape newlines from summary
   - ( ) Parse out urls from description
